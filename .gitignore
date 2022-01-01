@@ -1,0 +1,10 @@
+
+#mypy
+
+.__pycache__
+dist/
+build/
+.idea/
+effcorp_filetools.egg-info/
+Static Files for testing/
+
