@@ -28,9 +28,12 @@ from PyPDF2 import PdfFileReader, PdfFileWriter
 from getpass import getpass
 import PyPDF2
 import io
+import re
 import time
 import glob
+from tabula.io import read_pdf
 
+from fpdf import FPDF
 
 
 #File Search Related Tools
@@ -52,7 +55,9 @@ def search_drives(extension):
     """
   
 
+    print("Code developed by SHUBHAM : Git Hub Account 26Shubham")
 
+    
     drives = win32api.GetLogicalDriveStrings()
     drives = drives.split('\000')[:-1]
 
@@ -96,7 +101,7 @@ def search_drives(extension):
     
     folder=os.getcwd()
     
-    df.to_excel(folder+"\Drive Search Results .xlsx",index=False)
+    df.to_excel(folder+f"\Drive Search Results_{extension} .xlsx",index=False)
     
     print(f"Complete List of {extension} Files with their Filepath exported in Excel. Location:  {folder}")
     return(df)
@@ -104,6 +109,9 @@ def search_drives(extension):
 
 def search_folder(folder,extension):
     
+    
+    print("Code developed by SHUBHAM : Git Hub Account 26Shubham")
+
     a=folder
 
     dir_path = os.path.dirname(os.path.realpath(a))
@@ -138,10 +146,101 @@ def search_folder(folder,extension):
     df["File Name"]=df["Complete File Path"].apply(lambda x:x.split("\\")[-1])
     
     
-    df.to_excel(folder+"\Folder Search Results .xlsx",index=False)
+    df.to_excel(folder+f"\Folder Search Results_{extension}.xlsx",index=False)
     print(f"Complete List of {extension} Files with their Filepath exported in Excel. Location:  {folder}")
     return(df)
 
+
+
+
+
+
+def search_files_condition(folder,extension, case_sensitive=False):
+    
+    
+    '''
+    You can search for files as per your requirement by simply passing a regex pattern matching.
+    
+    By Default , the case_sensitive is set to False, but in case you want to turn it to True, you can simply pass that in th argument.
+    
+    '''
+
+    import re
+    import os
+    import pandas as pd
+    
+    print("Code Created by Shubham : Git Hub Account 26Shubham")
+
+
+    a=folder
+
+    dir_path = os.path.dirname(os.path.realpath(a))
+
+    #create a list to store all search results
+
+    list_a=[]
+    list_b=[]
+    list_c=[]
+
+    for root, dirs, files in os.walk(dir_path):
+        for file in files: 
+
+            if file.endswith(extension):
+                
+                
+                search=root+'\\'+str(file)
+                
+                file_name=str(file)             
+
+                list_a.append(search)
+                
+                sizes=os.path.getsize(search)/1024
+                
+                list_b.append(round(sizes,2))
+                
+                list_c.append(file_name)
+                    
+                
+                    
+
+    # To print total no.of search results
+
+    total_files = len(list_a)
+
+    print(f"Total No of Files with extension {extension} inside the folder {folder} : ",total_files)
+    
+    main_dict={"Complete File path":list_a, "Size of the File (in Kb)":list_b , "Name of File":list_c}
+    main_df=pd.DataFrame(main_dict)
+    
+
+
+    input_w=input("Enter the file you r looking for - ")
+    
+    if case_sensitive==False:
+        
+        r = re.compile(input_w,re.IGNORECASE)
+    else:
+        r = re.compile(input_w)
+        
+        
+    newlist = list(filter(r.match, list_c))
+    
+    print(f"There are {len(newlist)} no of files which meet the Condition.We are creating excel file for you..")
+    
+    
+    mask=main_df["Name of File"].isin(newlist)
+#     dict_new={"Complete File path":newlist}
+    df = main_df[mask]
+    
+#     df["Size of the File (in KB)"]=df["Complete File path"].apply(lambda x:os.path.getsize(x)/1024)
+
+#     print(df.to_string(index = False,header=False))
+    
+    newfile=folder+f"\Search Results_{extension}.xlsx"
+    
+    df.to_excel(newfile,index=False)
+    print(f"EXCEL with the List of Files meeting the Condition {input_w} has been created and stored in {newfile}")
+    
 
 
 
@@ -164,7 +263,7 @@ def split_excel(filepath ,cols , sheet=0, mode="file"):
         for i in colslist:
             df[df[cols] == i].to_excel("{}/{}.xlsx".format(pth, i), sheet_name=i[0:25:1], index=False)
 
-        print('Your data has been split into {} and {} files has been created.Click OK. \n All Files stored in same folder{}'.format(
+        print('Your data has been split into {} and {} files has been created. \n All Files stored in same folder{}'.format(
                                 ', '.join(colslist), len(colslist),pth))
 
         print("The names of the files are same as the name of the column items")
@@ -254,6 +353,9 @@ def combine_excel(folder,mode="file",sheet=0):
 
 def combine_txt(folder):
     
+    
+    print("Code developed by SHUBHAM : Git Hub Account 26Shubham")
+
     import pandas as pd
     import glob
     import os
@@ -283,6 +385,9 @@ def combine_txt(folder):
 def combine_pdf(folder):
 
 
+    
+    print("Code developed by SHUBHAM : Git Hub Account 26Shubham")
+
     filenames = glob.glob(folder + "/*.pdf")
 
     merged = PdfFileMerger()
@@ -298,7 +403,7 @@ def combine_pdf(folder):
     merged.write(newfile)
     merged.close()
 
-    print('Output', 'All pdf files in the selected folder have been merged.\n Click on OK')
+    print('Output', 'All pdf files in the selected folder have been merged.\n ')
     
     
     #done
@@ -306,7 +411,81 @@ def combine_pdf(folder):
 
 
 
+def combine_pdf_oddeven(filepath):
+
+
+    '''
+
+    This function is for combining multiple pdf files which has both odd & even number of pages..
+
+    And in case some one wants to merhe the pdf file such that , for all the odd paged pdf, a blank page is added and it becomes a even pdf.
+
+    And then all the pdf are combined so that both side printing of the combined document can be done easily.
+
+    So, in that case use this functionality.
+
+
+
+    '''
+    
+    
+    pdf5 = FPDF()
+   
+    pdf5.add_page()
+    pdf5.output("Blankpage.pdf")  
+
+    
+    filenames = glob.glob(filepath + "\*.pdf")
+    
+    merged = PdfFileMerger()
+
+    g = open("Blankpage.pdf", 'rb')
+    pdf_1 = PdfFileReader(g)
+
+    
+
+    for files in filenames:
+        
+        f = open(files, 'rb')
+        pdf = PdfFileReader(f)
+        
+        if (pdf.getNumPages()+1)%2 == 0:          
+     
+            merged.append(pdf)
+            merged.append(pdf_1)
+            f.close()
+        
+        else:
+            
+            merged.append(pdf)
+
+            f.close()
+
+    g.close()        
+    extension = os.path.splitext(filepath)[1]
+    filename = os.path.splitext(filepath)[0]
+    pth = os.path.dirname(filepath)
+    newfile = os.path.join(filepath, 'Combined_Pdf_Odd_Even_Streamlined' + ".pdf")
+
+    merged.write(newfile)
+    merged.close()
+    df = pd.DataFrame(filenames,columns=["Files to be combined"]) 
+    df["File combined in"]=newfile
+
+    df.to_excel(filepath+"\Summary of pdfs merged.xlsx")
+    os.remove("Blankpage.pdf")
+    print('Output', 'All pdf files in the selected folder have been merged, with added Blank Page for odd pdf')
+  
+
+
+
+
+
+
 def split_pdf(filepath,type="page_wise",set=1):
+
+    
+    print("Code developed by PRANAV : Git Hub Account pranav7712")
 
     f = open(filepath, 'rb')
     pdf = PdfFileReader(f)
@@ -568,6 +747,9 @@ def sort_pdf(filepath):
     """
     
 
+    print("Code developed by SHUBHAM : Git Hub Account 26Shubham")
+
+
     output_pdf = PdfFileWriter()
     original_file=filepath.split("\\")[-1]
 
@@ -623,6 +805,7 @@ def encrypt_pdf(filepath,password="Password@1",type="function"):
     """
     
     
+    print("Code developed by SHUBHAM : Git Hub Account 26Shubham")
 
     
     if type=="function":
@@ -709,6 +892,10 @@ def decrypt_pdf(filepath, password="Password@1" , type="function"):
 
 
     """
+    
+    print("Code developed by SHUBHAM : Git Hub Account 26Shubham")
+
+
     import os
     from PyPDF2 import PdfFileReader
     from PyPDF2 import PdfFileWriter
@@ -791,6 +978,10 @@ def addnumber_pdf(filepath):
     
     """
 
+    
+    print("Code developed by SHUBHAM : Git Hub Account 26Shubham")
+
+
     from PyPDF2 import PdfFileWriter
 
 
@@ -834,14 +1025,26 @@ def addnumber_pdf(filepath):
 
 def delete_pdfpage(filepath):
     
-    original_file=filepath.split("\\")[-1]
     
-    print(f"The pdf file {original_file} has been selected")
+
+    print("Code developed by SHUBHAM : Git Hub Account 26Shubham")
+
+
+    infile = PdfFileReader(filepath, 'rb')
+    output = PdfFileWriter()
+    
+
+    original_file=filepath.split("\\")[-1]
+    total_page=infile.getNumPages()
+    
+    print(f"The pdf file {original_file} has been selected. It has total {total_page} number of pages")
+
+    print("You will have to keep 2 inputs \n First, Total Number of pge you want to delete and \n Second , which Page numbers you want to delete.")
     
     time.sleep(1)
 
-    n=int(input(" Enter no.of pages to delete : "))
-    pages_to_delete = list(map(int,input("\nEnter page numbers(with spaces no commas) : ").strip().split()))[:n]
+    n=int(input(" Enter how many pages you want to delete : "))
+    pages_to_delete = list(map(int,input("\nEnter the page numbers(with spaces no commas) : ").strip().split()))[:n]
     
     
     print(pages_to_delete)
@@ -854,8 +1057,6 @@ def delete_pdfpage(filepath):
         pages_to_delete[i] = pages_to_delete[i] - 1
 
 
-    infile = PdfFileReader(filepath, 'rb')
-    output = PdfFileWriter()
     
     
     folder=os.path.dirname(filepath)
@@ -878,6 +1079,9 @@ def delete_pdfpage(filepath):
 
 
 def rotate_pdf(filepath,type="normal",degree=0,odd_degree=0,even_degree=0):
+
+    print("Code developed by PRANAV : Git Hub Account pranav7712")
+
 
     original_file=filepath.split("\\")[-1]
     
@@ -944,7 +1148,7 @@ def rotate_pdf(filepath,type="normal",degree=0,odd_degree=0,even_degree=0):
 
 
 
-def excel_to_pdf(filepath):
+def excel_to_pdf(filepath , sheet=0 ):
     
     
     """
@@ -954,29 +1158,46 @@ def excel_to_pdf(filepath):
     
     only one parameter needs to be given i.e the complete file path to the excel file
     
+    By default , it will print the first sheet, as sheet_pos value is set to 0
+    
+    Instead of position even name of the sheet can be givenwithin double quotes 
+
+
+    If you want to print some other sheet, then specify the postion of the sheet as 0,1, 2 ,3 ..7
+    
     
     """
+
+    print("Code developed by SHUBHAM : Git Hub Account 26Shubham")
+
 
     
     original_file=filepath.split("\\")[-1]
     
     excel = client.Dispatch("Excel.Application")
 
+    # sheet_position=int(sheet_pos)-1
+        
     sheets = excel.Workbooks.Open(filepath)
-    work_sheets = sheets.Worksheets[0]
+    work_sheets = sheets.Worksheets[sheet]
     
     
     folder=os.path.dirname(filepath)
-    new_file=folder+"\\"+filepath.split("\\")[-1].split(".")[0]+"_pdf_converted"
+    new_file=folder+"\\"+filepath.split("\\")[-1].split(".")[0]+"_pdf_converted"   #no need to end with .pdf because, program will export just in pdf file
     
-    work_sheets.ExportAsFixedFormat(0, new_file)
+    work_sheets.ExportAsFixedFormat(0, new_file)  #Export as Fixed format , takes 0 for pdf and 1 for xps format
     
     print(f"The Excel {original_file} has been converted to {new_file}")
+
+
+
 
 
     
     
 def pdf_to_word(filepath):
+
+    #under Development.. Not finalized
 
 
     with open(filepath, mode='rb') as f:
@@ -1009,6 +1230,9 @@ def ppt_to_pdf(filepath):
     
     """
     
+    
+    print("Code developed by SHUBHAM : Git Hub Account 26Shubham")
+
     print("Your Input file is at:")
     print(filepath)
     
@@ -1059,3 +1283,113 @@ def word_to_pdf(filepath):
 
     print("The conversion has been completed.")
     
+
+
+
+
+
+
+#Give the path of the folder where you are searching the invoice.
+
+def find_in_pdf(folder):
+    
+    
+    """
+    This function will need a folder where the pdf files are kept
+    
+    The function will ask you for a keyword which you want to search in the pdf files.
+    
+    NOte: Please note that this function uses Tabula   it is possible that the module may not be able to read some scanned pdf file.
+
+    If the module is unable to read any pdf file, it will give you the message and move to another file.
+
+    """
+    
+    print("Code developed by SHUBHAM : Git Hub Account 26Shubham")
+
+    #Input the keyword you're looking for, such as Amazon, Flipkart, India, or even sentences.... etc.
+
+    search=str(input("  Type the key word to search  - ")).lower()   #it's  NOT case sensitive
+    
+    #Creates a list of files available in the given path
+
+    filenames = glob.glob(folder + "\*.pdf")
+
+    #A new folder named "Extracted Files" will be created in the same location where the invoices were present
+
+    newfolder = "Matched_Pdf_File"
+    path = os.path.join(folder,newfolder) 
+    try:
+        os.mkdir(path)
+    except FileExistsError:
+        print("You already have a folder named 'Matched_Pdf_File' in that directory. \n Kinldy rename or move that folder.")
+    
+        return("Error")
+
+    #The code will check if in any of the files in the path, the given input exists and if there is one it will copy it to the extracted files.
+
+    no_of_files=len(filenames)
+    
+    if no_of_files==0:
+        print("There are no pdf files in this Folder")
+        raise Exception(f"Sorry, no pdf files found in the path {folder}")
+    else:
+        pass
+    
+        
+    matched_file=0
+    
+    for files in filenames:
+
+        
+        pdf = PdfFileReader(files)
+        
+        df=read_pdf(files,pages=1)
+        
+        filename=files.split("\\")[-1]
+
+        print(f"we are trying to read the file {filename}")
+        
+        listToStr = ' '.join([str(elem) for elem in df]).lower()
+        
+        if len(listToStr)==0:
+            print(f"SORRY..!! Unable to read {filename}. We are moving to another file..")
+        
+        else:
+            print(f"File has been read.. Trying to match with the keyword")
+        
+        if search in listToStr:
+            
+            print("CONGRATS..!! KeyWord Found...Copying this file to separate folder")
+            
+            matched_file+=1
+            
+            writer= PdfFileWriter() 
+           
+            for i in range(0, pdf.getNumPages()):
+                
+                page = pdf.getPage(i)
+
+                writer.addPage(page)
+
+            filename = files.split('\\')
+
+            filename=filename.pop()
+
+            
+            newfile = os.path.join(path,filename)
+            
+            output = open(newfile, "wb")
+
+            writer.write(output)
+
+            output.close()
+            
+    print(f"To no of pdf files matched with the keyword = {matched_file}")
+            
+            
+    print("\n  Program run successfully. Matched files has been kept in {path}. ")
+
+
+
+
